@@ -1,0 +1,57 @@
+// Bun lockfile — text JSONC format (Bun 1.2+).
+// Generated for probe: bun-portal-protocol-probe.
+// Pattern: S4 — portal: protocol (yarn-compat, symlinked, no-copy, no install hooks).
+//
+// The portal: protocol is yarn-compat: it creates a symlink from node_modules/my-portal-pkg
+// into vendor/my-portal-pkg, identical to link: in install behavior, but declared with
+// a distinct protocol token in the manifest and lockfile.
+//
+// Key Mend assertions:
+//   - my-portal-pkg must appear with source="local" (NOT "registry").
+//   - editable must be true (portal: is a symlink, like link:).
+//   - The protocol token "portal:" must be preserved in the lockfile workspaces section.
+//
+// Failure modes:
+//   - Protocol not recognized → dep dropped entirely (empty tree).
+//   - Protocol classified as "file:" → editable flag lost (file: is a copy, not a symlink).
+//   - Protocol classified as "registry" → npm lookup attempted, resolution fails.
+//   - Protocol classified as "link:" → source/editable correct, but protocol identity lost.
+//
+// Distinction from probe #7 (bun-local-sources-probe):
+//   - #7 covers file: (copy, editable=false) and link: (symlink, editable=true).
+//   - This probe covers portal: as the third distinct local-source protocol.
+//   - portal: and link: have the same install behavior (symlink), but different protocol tokens.
+//     A Mend parser that conflates the two will still emit the correct editable flag but will
+//     misreport the protocol. The protocol_detail field in the expected tree is the discriminant.
+{
+  "lockfileVersion": 1,
+
+  // workspaces: root project + the portal:-sourced local package.
+  // Both appear in workspaces because Bun records all local protocol deps
+  // (file:, link:, portal:, workspace:) in this section.
+  "workspaces": {
+    // Root workspace — declares the portal: dep.
+    "": {
+      "name": "bun-portal-protocol-probe",
+      "dependencies": {
+        // portal: protocol — yarn-compat symlink, no copy, no install hooks.
+        // The protocol token is preserved verbatim in the lockfile.
+        // Expected Mend output: source="local", editable=true.
+        "my-portal-pkg": "portal:./vendor/my-portal-pkg",
+      },
+    },
+
+    // Local package: vendor/my-portal-pkg — sourced via portal: protocol.
+    // Bun adds a workspaces entry for portal: deps so the lockfile records
+    // the resolved name and version. The package has no transitive deps.
+    "vendor/my-portal-pkg": {
+      "name": "my-portal-pkg",
+    },
+  },
+
+  // packages: resolved registry entries for external (npm) deps only.
+  // my-portal-pkg is local (portal:) — it is NOT listed here.
+  // This probe has no registry-sourced packages (no transitives through the local pkg).
+  "packages": {
+  },
+}

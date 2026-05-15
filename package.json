@@ -1,0 +1,8 @@
+{
+  "name": "bun-portal-protocol-probe",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "my-portal-pkg": "portal:./vendor/my-portal-pkg"
+  }
+}

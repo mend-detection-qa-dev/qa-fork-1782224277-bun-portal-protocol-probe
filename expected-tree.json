@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "pm": "bun",
+  "pm_version_tested": "1.2.0",
+  "source_file": "bun.lock",
+  "generated_at": "2026-05-15T00:00:00+00:00",
+  "root": {
+    "name": "bun-portal-protocol-probe",
+    "version": "0.1.0",
+    "dependencies": [
+      "my-portal-pkg"
+    ]
+  },
+  "packages": {
+    "my-portal-pkg": {
+      "version": "1.0.0",
+      "source": "local",
+      "group": "main",
+      "editable": true,
+      "dependencies": [],
+      "source_detail": {
+        "protocol": "portal:",
+        "path": "vendor/my-portal-pkg"
+      }
+    }
+  },
+  "dependency_counts": {
+    "direct": 1,
+    "transitive": 0,
+    "total": 1,
+    "notes": [
+      "Single direct dep: root -> my-portal-pkg (local/portal:, editable=true). No transitive deps.",
+      "portal: is a yarn-compat symlink protocol. Install behavior is identical to link: (symlink, no copy, no install hooks).",
+      "The only observable difference from link: in the dep tree is the protocol token in source_detail.protocol ('portal:' vs 'link:').",
+      "editable=true because portal: creates a symlink — edits to vendor/my-portal-pkg reflect immediately without reinstall.",
+      "If Mend maps portal: to file: instead, editable would be false — wrong. If Mend maps portal: to registry, resolution would fail — wrong.",
+      "This probe has zero transitive deps. If Mend emits any transitive, that is a ghost-dep failure."
+    ]
+  },
+  "local_source_edges": [
+    {
+      "name": "my-portal-pkg",
+      "protocol": "portal:",
+      "path": "vendor/my-portal-pkg",
+      "editable": true,
+      "install_behavior": "symlink — Bun creates a symlink in node_modules pointing to vendor/my-portal-pkg. Changes to vendor/my-portal-pkg reflect immediately without reinstall. No install hooks are run (unlike file: which can trigger postinstall). This is the defining characteristic of the portal: protocol."
+    }
+  ],
+  "project_metadata": {
+    "source_file": "bun.lock",
+    "groups": [
+      "main"
+    ]
+  },
+  "protocol_comparison": {
+    "note": "All three local-source protocols (file:, link:, portal:) map to source='local'. They are distinguished only by protocol token and editable flag.",
+    "file_colon": {
+      "editable": false,
+      "install_behavior": "copy",
+      "probe": "bun-local-sources-probe (#7)"
+    },
+    "link_colon": {
+      "editable": true,
+      "install_behavior": "symlink",
+      "probe": "bun-local-sources-probe (#7)"
+    },
+    "portal_colon": {
+      "editable": true,
+      "install_behavior": "symlink (no install hooks)",
+      "probe": "bun-portal-protocol-probe (#20, this probe)"
+    }
+  },
+  "warnings": [
+    "Bun is NOT a UA-supported resolver. Bun has no entry in Mend's install-tool list and does not appear in the UA javascript.md resolver file. Detection relies entirely on static bun.lock parsing (text JSONC, Bun 1.2+ format).",
+    "portal: MUST map to source='local'. If Mend does not recognize the portal: token, my-portal-pkg will be dropped entirely (most likely failure mode).",
+    "portal: is distinct from file: (editable=false, copy) — if Mend classifies portal: as file:, the editable flag will be false instead of true.",
+    "portal: and link: share the same install behavior (symlink, editable=true) but use different protocol tokens. A parser that conflates the two will still produce the correct editable flag but will lose the protocol identity in source_detail.protocol. The comparator must assert protocol='portal:' explicitly.",
+    "portal: is NOT the same as the npm 'portal' pattern or any npm-native feature. It originates from Yarn and is adopted by Bun for yarn-compat. An npm-resolver fallback will not understand it.",
+    "The lockfile workspaces section records portal: with the full protocol token ('portal:./vendor/my-portal-pkg'). A Mend parser that only reads the packages object will drop my-portal-pkg entirely — it appears only in workspaces, not in packages.",
+    "This probe has no transitive registry deps (my-portal-pkg/package.json declares empty dependencies). If Mend emits any transitive dep, that is a ghost-dep false positive.",
+    "Because the UA javascript.md resolver file has zero mentions of Bun or the portal: protocol, this probe is exploratory (not regression-bound against a documented Mend behavior). A passing result indicates Mend added Bun support; a failing result documents the gap for a Jira bug."
+  ]
+}
